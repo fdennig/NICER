@@ -1,7 +1,7 @@
 using HDF5, JLD, DataFrames, DataArrays #, StatsBase, NLopt, Gadfly, Distributions
 f(A,names) = DataFrame(Any[A[:,i] for i = 1:size(A,2)], map(Symbol,names))
 saveFolder = "$(pwd())/Outputs/..." ############################################ SET THIS TO YOUR SAVING DESTINATION
-folderDat = "$(pwd())/Outputs/valueOfLearning"
+folderDat = "$(pwd())/Outputs/valueOfLearning/tenbranches" ###### set this location of the directory that contains resultseeM1.jld
 folder = pwd()
 include("$(pwd())/Function_definitions.jl")
 include("$(pwd())/createPrandom.jl")
@@ -17,10 +17,9 @@ lmv = [0 3 tm]
 nsample = 10
 resArray = Array{Results10}(length(eeMv)+1,length(regimes),length(lmv))
 
-k=3; lm=lmv[k]
-j=1; regime = regimes[j]
-# for (k,lm) in enumerate(lmv) #loop over learning dates
-# for (j,regime) in enumerate(regimes) #loop over regimes
+
+for (k,lm) in enumerate(lmv) #loop over learning dates
+for (j,regime) in enumerate(regimes) #loop over regimes
   #run the DICE model
   i=3
   PP = createP(regime)
@@ -44,8 +43,8 @@ j=1; regime = regimes[j]
     resArray[i,j,k] = optimiseNICER10(PP,regime,lm=lm,tm=tm,inite=pre,model="NICE")
     save("$(saveFolder)resultsX.jld","resArray",resArray)
   end
-# end
-# end
+end
+end
 
 f(A,names) = DataFrame(Any[A[:,i] for i = 1:size(A,2)], map(Symbol,names))
 nemas = ["$i" for i=1:10];
