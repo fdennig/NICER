@@ -1,4 +1,4 @@
-using HDF5, JLD, DataFrames, DataArrays #, StatsBase, NLopt, Gadfly, Distributions
+using HDF5, JLD, DataFrames, DataArrays, StatsBase, NLopt, Gadfly, Distributions
 f(A,names) = DataFrame(Any[A[:,i] for i = 1:size(A,2)], map(Symbol,names))
 saveFolder = "$(pwd())/Outputs/..." ############################################ SET THIS TO YOUR SAVING DESTINATION
 folderDat = "$(pwd())/Outputs/valueOfLearning/tenbranches" ###### set this location of the directory that contains resultseeM1.jld
