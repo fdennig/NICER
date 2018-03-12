@@ -45,22 +45,3 @@ for (j,regime) in enumerate(regimes) #loop over regimes
   end
 end
 end
-
-f(A,names) = DataFrame(Any[A[:,i] for i = 1:size(A,2)], map(Symbol,names))
-nemas = ["$i" for i=1:10];
-year = DataFrame(year=10*(0:31)+2005);
-for i=1:2
-    for j=1:4
-        for k = 1:3
-            df = [year f(resArray[i,j,k].taxes,nemas)]
-            writetable("$(saveFolder)/tenTaxes_e_$(eev[i])_D_$(regimes[j])_l_$(lmv[k]).csv", df)
-        end
-    end
-end
-i=3
-for j=1:4
-  for k = 1:3
-      df = [year f(resArray[i,j,k].taxes,nemas)]
-      writetable("$(saveFolder)/tenTaxes_DICE_D_$(regimes[j])_l_$(lmv[k]).csv", df)
-  end
-end
