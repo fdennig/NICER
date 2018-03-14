@@ -69,6 +69,13 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
     z = zeros(nsample,42) # temp object to hold the random draws
     z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
 
+    regime_select == 0.5
+    # we just use the means for each sample draw
+    nsample = 10
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+
+
   elseif regime_select == 1
       # total randomization
       nsample=100
