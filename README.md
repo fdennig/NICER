@@ -1,7 +1,7 @@
 # NICER in Julia
 Contains the Julia code of the "NICE" integrated assessment model
 
-The original model from Francis Denning (https://github.com/fdennig/NICER) was running with Julia 0.6.
+The original model from fdenning (https://github.com/fdennig/NICER) was running with Julia 0.6.
 This update allows to run under Julia 1.1.0.
 
 Content:
