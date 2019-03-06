@@ -1,4 +1,18 @@
-# Function Definitions required to run createPrandom_and_parameters2consumption
+##############################################################################################################################################################
+# NICER computational model used for risk, inequality and climate change
+##############################################################################################################################################################
+# File: Function_definitions.jl
+# Content: part of the NICER integrated assessment model
+##############################################################################################################################################################
+# Source: original program running in Julia 0.6.4 can be found at https://github.com/fdennig/NICER
+# Changes introduced: all changes required to run with Julia 1.1.0
+# File release: March 5th 2019 (BM)
+##############################################################################################################################################################
+# Program required by:
+#  ../Optimization.jl
+#  ../createPrandom.jl
+##############################################################################################################################################################
+
 
 function backstop(Th,RL,pw,du,dd,tau,nsample)
   #creates the nsample,12,60 array of the backstop price
@@ -31,27 +45,28 @@ function sig(gT,delsig,sighisT,adj15,Y0,E0,nsample)
   T = 60
   I = 12
   sigma = zeros(nsample,I,T) # note order of dimensions
-  E000 = E0/1000
-  sigma[:,:,1] = repmat(E000./Y0,nsample)
-  sigma[:,:,2] = broadcast(*,broadcast(*,sigma[:,:,1],exp(sighisT*10)),adj15)
-  compdelsig = ((1.-broadcast(.^,1-delsig,2:T)')./delsig).-1 # creates all the compounding of delsig broadcast(.^,1-delsig,[2:T])'
+  E000 = E0./1000
+  sigma[:,:,1] = repeat(E000./Y0,nsample)
+  sigma[:,:,2] = broadcast(*,broadcast(*,sigma[:,:,1],exp.(sighisT.*10)),adj15)
+  compdelsig = ((1 .- broadcast(^,1-delsig,2:T)')./delsig) .-1 # creates all the compounding of delsig broadcast(.^,1-delsig,[2:T])'
+      #Julia_0_6: compdelsig = ((1.-broadcast(.^,1-delsig,2:T)')./delsig).-1
+      
   for t = 3:T
-    G_ = exp((ones(nsample,I)*(t-2)*gT + (sighisT.-gT)*compdelsig[1,t-2])*10) #sum(compdelsig[1:t-1]))*10)
+    G_ = exp.((ones(nsample,I)*(t-2)*gT + (sighisT.-gT)*compdelsig[1,t-2])*10) #sum(compdelsig[1:t-1]))*10)
+      #Julia_0_6: G_ = exp((ones(nsample,I)*(t-2)*gT + (sighisT.-gT)*compdelsig[1,t-2])*10)
     sigma[:,:,t] = sigma[:,:,2].*G_
   end
   return sigma
 end
 
-# T = 60
-# compdelsig = ((1.-broadcast(.^,1-delsig,[2:T])')./delsig).-1
-# compdelsig[1,5]
 function population(Pop0,poprates,nsample)
   T = 60
   I = 12
   L = zeros(nsample,I,T) # note order of dimensions
-  L[:,:,1] = repmat(Pop0,nsample)
+  L[:,:,1] = repeat(Pop0,nsample)
   for t = 2:31
-    L[:,:,t] = L[:,:,t-1].*exp(repmat(poprates[t-1,:]'*10,nsample))
+    L[:,:,t] = L[:,:,t-1].*exp.(repeat(poprates[t-1,:]'*10,nsample))
+      #Julia_0_6: L[:,:,t] = L[:,:,t-1].*exp(repmat(poprates[t-1,:]'*10,nsample))
   end
   for t = 32:T
     L[:,:,t] = L[:,:,31]
@@ -73,25 +88,33 @@ function tfactorp(A0,gy0,tgl,delA,gamma,Crate,Cratio,y0,nsample)
   T = 60
   I = 12
   tfp = zeros(nsample,I,T) # note order of dimensions
-  tfp[:,:,1] = repmat(A0,nsample)
-  tfp[:,:,2] = broadcast(*,tfp[:,:,1],exp(10*(1-gamma)*gy0))
-  compdelA = repmat(exp(-delA*(1:(T-2))'),nsample) # creates all the compounded delA values
-  gtUS = (1-gamma)*(tgl*ones(nsample,T-2) + (repmat(gy0[:,1],1,(T-2)) - tgl*ones(nsample,T-2)).*compdelA) # growth rates in US, periods 3 to 60
-  cgtus = cumsum(gtUS,2)
-  tfp[:,1,3:T] = tfp[:,1,2].*exp(cgtus.*10) # USA is correct
+  tfp[:,:,1] = repeat(A0,nsample)
+  tfp[:,:,2] = broadcast(*,tfp[:,:,1],exp.(10*(1-gamma)*gy0))
+      #Julia_0_6: tfp[:,:,2] = broadcast(*,tfp[:,:,1],exp(10*(1-gamma)*gy0))
+  compdelA = repeat(exp.(-delA*(1:(T-2))'),nsample) # creates all the compounded delA values
+      #Julia_0_6: compdelA = repmat(exp(-delA*(1:(T-2))'),nsample)
+  gtUS = (1-gamma)*(tgl*ones(nsample,T-2) + (repeat(gy0[:,1],1,(T-2)) - tgl*ones(nsample,T-2)).*compdelA) # growth rates in US, periods 3 to 60
+  cgtus = cumsum(gtUS, dims=2)
+      #Julia_0_6: cgtus = cumsum(gtUS,2)
+  tfp[:,1,3:T] = tfp[:,1,2].*exp.(cgtus.*10) # USA is correct
+      #Julia_0_6: tfp[:,1,3:T] = tfp[:,1,2].*exp(cgtus.*10)
   fac = zeros(nsample,I-1)
   for i = 1:nsample
-    fac[i,:] = log(y0[1]./y0[2:I]') + log(Cratio) + 10*(gy0[i,1].-gy0[i,2:I])'
+    fac[i,:] = log.(y0[1]./y0[2:I]') + log.(Cratio) + 10*(gy0[i,1].-gy0[i,2:I])'
+      #Julia_0_6: fac[i,:] = log(y0[1]./y0[2:I]') + log(Cratio) + 10*(gy0[i,1].-gy0[i,2:I])'
   end
-  k = (1-Crate).^(0:T-3)'
+  k = (1 .-Crate).^(0:T-3)'
+      #Julia_0_6: k = (1-Crate).^(0:T-3)'
   kR = zeros(nsample,I-1,T-2)
   for i = 1:nsample
     kR[i,:,:] = Crate[i].*(1-gamma)*0.1*(fac[i,:]*k[i,:]')
   end
-  gtUS_ = permutedims(cat(3,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS),[1 3 2]) # adds third dimension to gtUS (manual at the moment since I-1 = 11 is fixed)
+  gtUS_ = permutedims(cat(dims=3,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS),[1 3 2]) # adds third dimension to gtUS (manual at the moment since I-1 = 11 is fixed)
+      #Julia_0_6: gtUS_ = permutedims(cat(3,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS),[1 3 2])
   gtR = gtUS_ + kR
-  cgtR = cumsum(gtR,3)
-  tfp[:,2:I,3:T] = tfp[:,2:I,2].*exp(10*cgtR)
+  cgtR = cumsum(gtR, dims=3)
+      #Julia_0_6: cgtR = cumsum(gtR,3)
+  tfp[:,2:I,3:T] = tfp[:,2:I,2].*exp.(10*cgtR)
   return tfp
 end
 
@@ -144,118 +167,199 @@ end
 function fromtax(tax,P,Tm)
   # this is the NICE model
   # maps the carbon tax (length(tax) < Tm) to consumption (Tmx12x5) using the parameters in the parameter draw P
-	#consumption and capital
-	c = Array(Float64, Tm, 12, 5)
-  cbar = Array(Float64, Tm, 12)
-	K = Array(Float64, Tm, 12)
-	K[1,:] = P.K0
-  #temperature emissions and carbon mass
-	T = Array(Float64, Tm, 2)
+  
+  #consumption
+  c = Array{Float64}(undef, Tm, 12, 5)
+        #Julia_0_6: c = Array(Float64, Tm, 12, 5)
+  cbar = Array{Float64}(undef, Tm, 12)
+        #Julia_0_6: cbar = Array(Float64, Tm, 12)
+  
+  #capital
+  K = Array{Float64}(undef, Tm, 12)
+        #Julia_0_6:   K = Array(Float64, Tm, 12)
+  K[1,:] = P.K0
+  
+  #temperature
+  T = Array{Float64}(undef, Tm, 2)
+       #Julia_0_6:   T = Array(Float64, Tm, 2)
 	T[1, :] = P.T0
-	T[2, :] = P.T1
-	E = Array(Float64, Tm, 12)
+  T[2, :] = P.T1
+  
+  #emissions
+  E = Array{Float64}(undef, Tm, 12)
+       #Julia_0_6:   E = Array(Float64, Tm, 12)
   E[1,:] = P.E0/1000
-	M = Array(Float64, Tm, 3)
+
+  #carbon mass
+  M = Array{Float64}(undef, Tm, 3)
+       #Julia_0_6:   M = Array(Float64, Tm, 3)
 	M[1, :] = P.M0
-	M[2, :] = P.M1
-	#savings and tax
+  M[2, :] = P.M1
+  
+	#savings
 	s1 = P.para[4]/(1+P.para[1])^10
 	S = ones(Tm,12).*s1
-  # TAX =  [0; tax; maximum(P.pb,2)[(length(tax)+2):end]]
-  TAX = maximum(P.pb,2)
+
+  #tax
+  # TAX = [0; tax; maximum(P.pb,2)[(length(tax)+2):end]]
+  TAX = maximum(P.pb,dims=2)
+      #Julia_0_6:   TAX = maximum(P.pb,2)
 	TAX[1] = 0
-	TAX[2:length(tax)+1] = tax
+  TAX[2:length(tax)+1] = tax
 	#mitition rate, abatement cost, damage, deflator
-	mu = Array(Float64, Tm, 12)
-	lam = Array(Float64, Tm, 12)
-	D = Array(Float64, Tm, 12)
-	AD = Array(Float64, Tm, 12)
-	#output
-	Y = Array(Float64, Tm, 12)
-	Q = Array(Float64, Tm, 12)
-	#Period 1
-	mu[1, :] = max(min((TAX[1]./P.pb[1,:]).^(1/(P.th2-1)),1),0) # mu between 0 and 1 element by element
-	lam[1, :] = max(min(P.th1[1, :].*mu[1, :].^P.th2,1),0) # lam between 0 and 1 element by element
-	D[1, :] = damage(T[1,1],P.psi)
-	AD[1, :] = (1-lam[1, :])./(1+D[1, :])
-	Y[1, :] = P.A[1,:].*P.L[1,:].^(1-P.para[4]).*K[1,:].^P.para[4]
+  mu = Array{Float64}(undef, Tm, 12)
+       #Julia_0_6: mu = Array(Float64, Tm, 12)
+	lam = Array{Float64}(undef, Tm, 12)
+       #Julia_0_6: lam = Array(Float64, Tm, 12)
+	D = Array{Float64}(undef, Tm, 12)
+       #Julia_0_6: D = Array(Float64, Tm, 12)
+  AD = Array{Float64}(undef, Tm, 12)
+       #Julia_0_6: AD = Array(Float64, Tm, 12)
+
+  #output
+	Y = Array{Float64}(undef, Tm, 12)
+       #Julia_0_6: Y = Array(Float64, Tm, 12)
+  Q = Array{Float64}(undef, Tm, 12)
+       #Julia_0_6: Q = Array(Float64, Tm, 12)
+
+  #Period 1
+  mu[1,:] = max.(min.((TAX[1]./P.pb[1,:]).^(1/(P.th2-1)),1),0) # mu between 0 and 1 element by element
+      #Julia_0_6: mu[1,:] = max(min((TAX[1]./P.pb[1,:]).^(1/(P.th2-1)),1),0)
+	lam[1,:] = max.(min.(P.th1[1,:].*mu[1,:].^P.th2,1),0) # lam between 0 and 1 element by element
+      #Julia_0_6:   lam[1,:] = max(min(P.th1[1,:].*mu[1,:].^P.th2,1),0)
+  D[1,:] = damage(T[1,1],P.psi)
+  AD[1,:] = (1 .-lam[1,:])./(1 .+D[1,:])
+      #Julia_0_6: AD[1,:] = (1-lam[1,:])./(1+D[1,:])
+      #Julia_1_1_case
+  Y[1,:] = P.A[1,:].*P.L[1,:].^(1-P.para[4]).*K[1,:].^P.para[4]
 	Q[1,:] = AD[1,:].*Y[1,:]
-	cbar[1,:] = (1-S[1, :]).*Q[1, :]./P.L[1, :]
+  cbar[1,:] = (1 .-S[1,:]).*Q[1,:]./P.L[1,:]
+      #Julia_0_6: cbar[1,:] = (1-S[1,:]).*Q[1,:]./P.L[1, :]
+      #Julia_1_1_case
+
 	#quintile consumptions period 1
 	for i = 1:5
-		c[1,:,i] = 5*cbar[1,:].*((1+D[1, :]).*P.q[i, :] - D[1, :].*P.d[i, :])
-	end
+    c[1,:,i] = 5*cbar[1,:].*((1 .+D[1, :]).*P.q[i, :] - D[1, :].*P.d[i, :])
+        #Julia_0_6: c[1,:,i] = 5*cbar[1,:].*((1+D[1,:]).*P.q[i,:] - D[1,:].*P.d[i,:])
+        #Julia_1_1_case
+  end
+
   # Period 2
-	K[2, :] = max(S[1,:].*Q[1, :]*10,0) # prevent negative capital (note, this will not bind at the optimum, but prevents the optmization from crashing)
-	Y[2, :] = P.A[2,:].*P.L[2,:].^(1-P.para[4]).*K[2,:].^P.para[4]
-	mu[2, :] =  max(min((TAX[2]./P.pb[2,:]).^(1/(P.th2-1)),1),0)
-	E[2, :] = (1 - mu[2, :]).*P.sigma[2, :].*Y[2, :]
-	M[3, :] = Mflow(M[2,:]', sum(E[2, :] + P.EL[2, :]), P.TrM)
-	lam[2, :] = max(min(P.th1[2, :].*mu[2, :].^P.th2,1),0)
+  K[2, :] = max.(S[1,:].*Q[1, :]*10,0) # prevent negative capital (note, this will not bind at the optimum, but prevents the optmization from crashing)
+        #Julia_0_6: K[2,:] = max(S[1,:].*Q[1,:]*10,0)
+  Y[2, :] = P.A[2,:].*P.L[2,:].^(1-P.para[4]).*K[2,:].^P.para[4]
+  mu[2, :] = max.(min.((TAX[2]./P.pb[2,:]).^(1/(P.th2-1)),1),0)
+        #Julia_0_6: mu[2,:] = max(min((TAX[2]./P.pb[2,:]).^(1/(P.th2-1)),1),0)
+  E[2, :] = (1 .-mu[2, :]).*P.sigma[2,:].*Y[2, :]
+        #Julia_0_6: E[2,:] = (1 - mu[2, :]).*P.sigma[2, :].*Y[2, :]
+      #Julia_1_1_case
+  M[3, :] = Mflow(M[2,:]', sum(E[2, :] + P.EL[2, :]), P.TrM)
+  lam[2, :] = max.(min.(P.th1[2, :].*mu[2, :].^P.th2,1),0)
+        #Julia_0_6: lam[2, :] = max(min(P.th1[2, :].*mu[2, :].^P.th2,1),0)
 	D[2, :] = damage(T[2, 1], P.psi)
-	AD[2, :] = (1-lam[2, :])./(1+D[2, :])
+  AD[2, :] = (1 .-lam[2, :])./(1 .+D[2, :])  
+        #Julia_0_6: AD[2, :] = (1-lam[2, :])./(1+D[2, :])
+        #Julia_1_1_case
 	Q[2,:] = AD[2,:].*Y[2,:]
-	cbar[2,:] = (1-S[2, :]).*Q[2, :]./P.L[2, :]
+  cbar[2,:] = (1 .-S[2, :]).*Q[2, :]./P.L[2, :]
+        #Julia_0_6: cbar[2,:] = (1-S[2, :]).*Q[2, :]./P.L[2, :]
+        #Julia_1_1_case
+   
 	#quintile consumptions period 2
 	for i = 1:5
-		c[2,:,i] = max(5*cbar[2,:].*((1+D[2, :]).*P.q[i, :] - D[2, :].*P.d[i, :]), P.tol)
+    c[2,:,i] = max.(5*cbar[2,:].*((1 .+D[2, :]).*P.q[i, :] - D[2, :].*P.d[i, :]), P.tol)
+        #Julia_0_6: c[2,:,i] = max(5*cbar[2,:].*((1+D[2, :]).*P.q[i, :] - D[2, :].*P.d[i, :]), P.tol)
+      #Julia_1_1_case
 	end
-	K[3, :] = max(S[2, :].*Q[2, :].*10,0) # prevent negative capital (note, this will not bind at the optimum, but prevents the optmization from crashing)
-	#periods 3 to Tm-1
+  K[3, :] = max.(S[2, :].*Q[2, :].*10,0) # prevent negative capital (note, this will not bind at the optimum, but prevents the optmization from crashing)
+        #Julia_0_6: K[3, :] = max(S[2, :].*Q[2, :].*10,0)
+
+  #periods 3 to Tm-1
 	for t = 3:(Tm - 1)
     Y[t,:] = P.A[t,:].*P.L[t,:].^(1-P.para[4]).*K[t,:].^P.para[4]
-		mu[t, :] =  max(min((TAX[t]./P.pb[t,:]).^(1/(P.th2-1)),1),0)
-		lam[t, :] = max(min(P.th1[t, :].*mu[t, :].^P.th2,1),0)
-		E[t, :] = (1 - mu[t, :]).*P.sigma[t, :].*Y[t, :]
-		M[t+1, :] = Mflow(M[t,:]', sum(E[t, :] + P.EL[t, :]), P.TrM)
+    mu[t, :] =  max.(min.((TAX[t]./P.pb[t,:]).^(1/(P.th2-1)),1),0)
+        #Julia_0_6: mu[t, :] =  max(min((TAX[t]./P.pb[t,:]).^(1/(P.th2-1)),1),0)
+    lam[t, :] = max.(min.(P.th1[t, :].*mu[t, :].^P.th2,1),0) 
+        #Julia_0_6: lam[t, :] = max(min(P.th1[t, :].*mu[t, :].^P.th2,1),0)
+    E[t, :] = (1 .-mu[t, :]).*P.sigma[t, :].*Y[t, :]
+        #Julia_0_6: E[t, :] = (1 - mu[t, :]).*P.sigma[t, :].*Y[t, :]
+        #Julia_1_1_case
+    M[t+1, :] = Mflow(M[t,:]', sum(E[t, :] + P.EL[t, :]), P.TrM)
 		Mbar = (M[t+1, 1] +M[t, 1])/2
 		T[t, :] = tempforcing(Mbar, P.Fex[t], P.xi, P.TrT, T[t-1, :]')
 		D[t, :] = damage(T[t, 1], P.psi)
-		AD[t, :] = (1-lam[t, :])./(1+D[t, :])
-		Q[t, :] = AD[t, :].*Y[t, :]
-		cbar[t,:] = (1-S[t, :]).*Q[t, :]./P.L[t, :]
+    AD[t, :] = (1 .-lam[t, :])./(1 .+D[t, :])
+        #Julia_0_6: AD[t, :] = (1-lam[t, :])./(1+D[t, :])
+        #Julia_1_1_case
+		Q[t, :] = AD[t, :].*Y[t, :]                        
+    cbar[t,:] = (1 .-S[t, :]).*Q[t, :]./P.L[t, :] 
+        #Julia_0_6: cbar[t,:] = (1-S[t, :]).*Q[t, :]./P.L[t, :]
+        #Julia_1_1_case
+
 		for i = 1:5
-			c[t, :, i] = max(5*cbar[t,:].*((1+D[t, :]).*P.q[i, :] - D[t, :].*P.d[i, :]), P.tol)
+      c[t, :, i] = max.(5*cbar[t,:].*((1 .+D[t, :]).*P.q[i, :] - D[t, :].*P.d[i, :]), P.tol)
+        #Julia_0_6: c[t, :, i] = max(5*cbar[t,:].*((1+D[t, :]).*P.q[i, :] - D[t, :].*P.d[i, :]), P.tol)
+        #Julia_1_1_case
 		end
-		K[t+1, :] = max(S[t, :].*Q[t, :]*10,0) # prevent negative capital (note, this will not bind at the optimum, but prevents the optmization from crashing)
-	end
+    K[t+1, :] = max.(S[t, :].*Q[t, :]*10,0) # prevent negative capital (note, this will not bind at the optimum, but prevents the optimization from crashing)
+        #Julia_0_6: K[t+1, :] = max(S[t, :].*Q[t, :]*10,0)
+    end
+  
   # Period Tm
   Y[Tm, :] = P.A[Tm,:].*P.L[Tm,:].^(1-P.para[4]).*K[Tm,:].^P.para[4]
-	mu[Tm, :] =  max(min((TAX[Tm]./P.pb[Tm,:]).^(1/(P.th2-1)),1),0)
-	lam[Tm, :] = max(min(P.th1[Tm, :].*mu[Tm, :].^P.th2,1),0)
+  mu[Tm, :] =  max.(min.((TAX[Tm]./P.pb[Tm,:]).^(1/(P.th2-1)),1),0)
+        #Julia_0_6: mu[Tm, :] =  max(min((TAX[Tm]./P.pb[Tm,:]).^(1/(P.th2-1)),1),0)
+  lam[Tm, :] = max.(min.(P.th1[Tm, :].*mu[Tm, :].^P.th2,1),0)
+        #Julia_0_6: lam[Tm, :] = max(min(P.th1[Tm, :].*mu[Tm, :].^P.th2,1),0)
 	T[Tm, :] = tempforcing(M[Tm, 1], P.Fex[Tm], P.xi, P.TrT, T[Tm-1, :]')
 	D[Tm, :] = damage(T[Tm, 1], P.psi)
-	AD[Tm, :] = (1-lam[Tm, :])./(1+D[Tm, :])
+  AD[Tm, :] = (1 .-lam[Tm, :])./(1 .+D[Tm, :]) 
+        #Julia_0_6: AD[Tm, :] = (1-lam[Tm, :])./(1+D[Tm, :])
+        #Julia_1_1_case
 	Q[Tm, :] = AD[Tm, :].*Y[Tm, :]
-	cbar[Tm,:] = (1-S[Tm, :]).*Q[Tm, :]./P.L[Tm, :]
+  cbar[Tm,:] = (1 .-S[Tm, :]).*Q[Tm, :]./P.L[Tm, :]
+        #Julia_0_6:  cbar[Tm,:] = (1-S[Tm, :]).*Q[Tm, :]./P.L[Tm, :]
+        #Julia_1_1_case
 	for i = 1:5
-		c[Tm, :, i] =  max(5*cbar[Tm,:].*((1+D[Tm, :]).*P.q[i, :] - D[Tm, :].*P.d[i, :]), P.tol)
+    c[Tm, :, i] =  max.(5*cbar[Tm,:].*((1 .+D[Tm, :]).*P.q[i, :] - D[Tm, :].*P.d[i, :]), P.tol)
+        #Julia_0_6: c[Tm, :, i] =  max(5*cbar[Tm,:].*((1+D[Tm, :]).*P.q[i, :] - D[Tm, :].*P.d[i, :]), P.tol)
+        #Julia_1_1_case
 	end
-	return c,K,T,E,M,mu,lam,D,AD,Y,Q,cbar
+
+  return c,K,T,E,M,mu,lam,D,AD,Y,Q,cbar
 end
 
 function welfareN(c, L, rho, eta, Tm)
-	R = 1./(1+rho).^(10.*(0:(Tm-1)))
-	A = Array(Float64, Tm, 12, 5)
+  R = 1 ./(1+rho).^(10 .*(0:(Tm-1)))
+      #Julia_0_6: R = 1./(1+rho).^(10.*(0:(Tm-1)))
+  A = Array{Float64}(undef, Tm, 12, 5)
+      #Julia_0_6: A = Array(Float64, Tm, 12, 5)
 	for i = 1:5
 		A[:,:,i] = 0.2*L[1:Tm,:].*c[:,:,i].^(1-eta)
 	end
-	B = squeeze(sum(sum(A,3),2),3)'
+  B = squeeze(sum(sum(A, dims=3), dims=2), dims=3)'
+      #Julia_0_6: B = squeeze(sum(sum(A,3),2),3)'
 	W = (B*R/(1-eta))[1]
   return W
 end
 
 function welfareR(c, L, rho, eta, Tm)
-	R = 1./(1+rho).^(10.*(0:(Tm-1)))
+  R = 1 ./(1+rho).^(10 .*(0:(Tm-1)))
+      #Julia_0_6: R = 1./(1+rho).^(10.*(0:(Tm-1)))
+      #Julia_1_1_case
 	A = L[1:Tm,:].*c[:,:].^(1-eta)
-  B = sum(A,2)'
+  B = sum(A, dims=2)'
+      #Julia_0_6: B = sum(A,2)'
 	W = ((B*R)/(1-eta))[1]
   return W
 end
 
 function welfareD(c,L,rho,eta,Tm)
-  R = 1./(1+rho).^(10.*(0:(Tm-1)))
-  A = sum(L[1:Tm,:].*c[:,:],2)'
+  R = 1 ./(1+rho).^(10 .*(0:(Tm-1)))
+      #Julia_0_6: R = 1./(1+rho).^(10.*(0:(Tm-1)))
+      #Julia_1_1_case
+  A = sum(L[1:Tm,:].*c[:,:], dims=2)'
+      #Julia_0_6: A = sum(L[1:Tm,:].*c[:,:],2)'
   B = ((A.^(1-eta)*R)/(1-eta))
   W = B[1]
 end
@@ -280,6 +384,7 @@ end
 
 function tax2expectedwelfare(tax, P, rho, eta, nu, Tm, tm, lm, idims; model="NICE")
   nsample=length(P)
+  
   if model == "NICE"
     c = zeros(Tm,12,5,nsample) # will contain per capita consumption at time t, in region I, in quintile q, for random draw n
     for i = 1:idims
@@ -288,7 +393,10 @@ function tax2expectedwelfare(tax, P, rho, eta, nu, Tm, tm, lm, idims; model="NIC
     for i = idims+1:length(P) # NB length(P) = nsample
         c[:,:,:,i] = fromtax([tax[1:lm];tax[tm+1:end]],P[i],Tm)[1]
     end
-    R = 1./(1+rho).^(10.*(0:(Tm-1))) # discount factors for each time period
+
+    R = 1 ./(1+rho).^(10 .*(0:(Tm-1))) # discount factors for each time period
+      #Julia_0_6: R = 1./(1+rho).^(10.*(0:(Tm-1)))
+      #Julia_1_1_case
     D = zeros(Tm,12,5,nsample)
     # Convert consumption to per capita discounted utility at time t, in region I (weighted by population), in quintile q, for random draw n
     for t = 1:Tm
@@ -300,15 +408,19 @@ function tax2expectedwelfare(tax, P, rho, eta, nu, Tm, tm, lm, idims; model="NIC
     end
     D = D_
     # Now sum over quintiles to get per capita discounted utility at time t, in region I, in random draw n
-    B1 = sum(D,3)
+    B1 = sum(D, dims=3)
+      #Julia_0_6: B1 = sum(D,3)
     # Now sum over regions to get per capita discounted utility at time t, in random draw n
-    B2 = sum(B1,2)
+    B2 = sum(B1, dims=2)
+      #Julia_0_6: B2 = sum(B1,2)
     # Now sum over time to get per capita lifetime discounted utility in random draw n, and undo the concavity to get a "certainty equivalent" consumption measure
-    B3 = (sum(B2,1).*(1-eta)).^(1/(1-eta))
+    B3 = (sum(B2, dims=1).*(1-eta)).^(1/(1-eta))
+      #Julia_0_6: B3 = (sum(B2,1).*(1-eta)).^(1/(1-eta))
     # Now sum over random draws with the risk adjustment (nu) to get total world welfare (normalizing by nsample)
     W = sum(B3.^(1-nu))*(1/(1-nu))./nsample
     # W = (0.33*B3[1,1,1,1].^(1-nu) + 0.67*B3[1,1,1,2].^(1-nu))*(1/(1-nu)) # Test for unequal probabilities effect on learning...
     return W,c
+  
   elseif model == "RICE"
     c = zeros(Tm,12,nsample) # will contain per capita consumption at time t, in region I, in quintile q, for random draw n
     for i = 1:idims
@@ -317,7 +429,10 @@ function tax2expectedwelfare(tax, P, rho, eta, nu, Tm, tm, lm, idims; model="NIC
     for i = idims+1:length(P) # NB length(P) = nsample
         c[:,:,i] = fromtax([tax[1:lm];tax[tm+1:end]],P[i],Tm)[12]
     end
-    R = 1./(1+rho).^(10.*(0:(Tm-1))) # discount factors for each time period
+
+    R = 1 ./(1+rho).^(10 .*(0:(Tm-1))) # discount factors for each time period
+      #Julia_0_6:   R = 1./(1+rho).^(10.*(0:(Tm-1)))
+      #Julia_1_1_case
     D = zeros(Tm,12,nsample)
     # Convert consumption to per capita discounted utility at time t, in region I (weighted by population), in quintile q, for random draw n
     for t = 1:Tm #convert per capita consumption to discounted utility
@@ -327,34 +442,45 @@ function tax2expectedwelfare(tax, P, rho, eta, nu, Tm, tm, lm, idims; model="NIC
       D[:,:,i] = D[:,:,i].*P[i].L[1:Tm,:]
     end
     # Now sum over regions to get per capita discounted utility at time t, in random draw n
-    B2 = sum(D,2)
+    B2 = sum(D, dims=2)
+      #Julia_0_6: B2 = sum(D,2) 
     # Now sum over time to get per capita lifetime discounted utility in random draw n, and undo the concavity to get a "certainty equivalent" consumption measure
-    B3 = (sum(B2,1).*(1-eta)).^(1/(1-eta))
+    B3 = (sum(B2,dims=1).*(1-eta)).^(1/(1-eta))
+      #Julia_0_6: B3 = (sum(B2,1).*(1-eta)).^(1/(1-eta))
     # Now sum over random draws with the risk adjustment (nu) to get total world welfare (normalizing by nsample)
     W = sum(B3.^(1-nu))*(1/(1-nu))./nsample
     return W,c
+  
   elseif model == "DICE"
     c = zeros(Tm,nsample) # will contain per capita consumption at time t, in region I, in quintile q, for random draw n
     for i = 1:idims
-        c[:,i] = sum(fromtax(tax[1:tm],P[i],Tm)[12].*P[i].L[1:Tm,:],2)./sum(P[i].L[1:Tm,:],2) # only consider tm length since we want to create a tax vector of particular length
+        c[:,i] = sum(fromtax(tax[1:tm],P[i],Tm)[12].*P[i].L[1:Tm,:],dims=2)./sum(P[i].L[1:Tm,:],dims=2) # only consider tm length since we want to create a tax vector of particular length
+            #Julia_0_6: c[:,i] = sum(fromtax(tax[1:tm],P[i],Tm)[12].*P[i].L[1:Tm,:],2)./sum(P[i].L[1:Tm,:],2)
     end
     for i = idims+1:length(P) # NB length(P) = nsample
-        c[:,i] = sum(fromtax([tax[1:lm];tax[tm+1:end]],P[i],Tm)[12].*P[i].L[1:Tm,:],2)./sum(P[i].L[1:Tm,:],2)
+        c[:,i] = sum(fromtax([tax[1:lm];tax[tm+1:end]],P[i],Tm)[12].*P[i].L[1:Tm,:],dims=2)./sum(P[i].L[1:Tm,:],dims=2)
+            #Julia_0_6: c[:,i] = sum(fromtax([tax[1:lm];tax[tm+1:end]],P[i],Tm)[12].*P[i].L[1:Tm,:],2)./sum(P[i].L[1:Tm,:],2) 
     end
-    R = 1./(1+rho).^(10.*(0:(Tm-1))) # discount factors for each time period
+
+    R = 1 ./(1+rho).^(10 .*(0:(Tm-1))) # discount factors for each time period
+      #Julia_0_6: R = 1./(1+rho).^(10.*(0:(Tm-1)))
+      #Julia_1_1_case
     D = zeros(Tm,nsample)
     for t = 1:Tm #convert per capita consumption to discounted utility
       D[t,:] = ((c[t,:].^(1-eta)).*R[t])./(1-eta)
     end
     for i=1:nsample # weight discounted utility by global population
-      D[:,i] = D[:,i].*sum(P[i].L[1:Tm,:],2)
+      D[:,i] = D[:,i].*sum(P[i].L[1:Tm,:],dims=2)
+          #Julia_0_6: D[:,i] = D[:,i].*sum(P[i].L[1:Tm,:],2)
     end
     # Now sum over time to get per capita lifetime discounted utility in random draw n
-    B3 = (sum(D,1).*(1-eta)).^(1/(1-eta))
+    B3 = (sum(D,dims=1).*(1-eta)).^(1/(1-eta))
+      #Julia_0_6: B3 = (sum(D,1).*(1-eta)).^(1/(1-eta))
     # Now sum over random draws with the risk adjustment (nu) to get total world welfare (normalizing by nsample)
     W = sum(B3.^(1-nu))*(1/(1-nu))./nsample
     return W,c
   end
+  
 end
 
 function tax2expectedwelfare10(tax, P, rho, eta, nu, Tm, tm, lm; model="NICE")
@@ -364,7 +490,10 @@ function tax2expectedwelfare10(tax, P, rho, eta, nu, Tm, tm, lm; model="NICE")
     for i = 1:nsample
         c[:,:,:,i] = fromtax(tax[:,i],P[i],Tm)[1] # only consider tm length since we want to create a tax vector of particular length
     end
-    R = 1./(1+rho).^(10.*(0:(Tm-1))) # discount factors for each time period
+
+    R = 1 ./(1+rho).^(10 .*(0:(Tm-1))) # discount factors for each time period
+      #Julia_0_6: R = 1./(1+rho).^(10.*(0:(Tm-1)))
+      #Julia_1_1_case
     D = zeros(Tm,12,5,nsample)
     # Convert consumption to per capita discounted utility at time t, in region I (weighted by population), in quintile q, for random draw n
     for t = 1:Tm
@@ -372,25 +501,33 @@ function tax2expectedwelfare10(tax, P, rho, eta, nu, Tm, tm, lm; model="NICE")
     end
     D_ = zeros(Tm,12,5,nsample)
     for i = 1:nsample
-      D_[:,:,:,i] = D[:,:,:,i].*cat(3,P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:])/5
+      D_[:,:,:,i] = D[:,:,:,i].*cat(dims=3,P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:])/5
+      #Julia_0_6: D_[:,:,:,i] = D[:,:,:,i].*cat(3,P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:])/5
+      #Julia_1_1_case
     end
     D = D_
     # Now sum over quintiles to get per capita discounted utility at time t, in region I, in random draw n
-    B1 = sum(D,3)
+    B1 = sum(D,dims=3)
+        #Julia_0_6: B1 = sum(D,3)
     # Now sum over regions to get per capita discounted utility at time t, in random draw n
-    B2 = sum(B1,2)
+    B2 = sum(B1,dims=2)
+        #Julia_0_6: B2 = sum(B1,2)
     # Now sum over time to get per capita lifetime discounted utility in random draw n, and undo the concavity to get a "certainty equivalent" consumption measure
-    B3 = (sum(B2,1).*(1-eta)).^(1/(1-eta))
+    B3 = (sum(B2,dims=1).*(1-eta)).^(1/(1-eta))
+        #Julia_0_6: B3 = (sum(B2,1).*(1-eta)).^(1/(1-eta))
     # Now sum over random draws with the risk adjustment (nu) to get total world welfare (normalizing by nsample)
     W = sum(B3.^(1-nu))*(1/(1-nu))./nsample
     # W = (0.33*B3[1,1,1,1].^(1-nu) + 0.67*B3[1,1,1,2].^(1-nu))*(1/(1-nu)) # Test for unequal probabilities effect on learning...
     return W,c
+
   elseif model == "RICE"
     c = zeros(Tm,12,nsample) # will contain per capita consumption at time t, in region I, for random draw n
     for i = 1:nsample
         c[:,:,i] = fromtax(tax[:,i],P[i],Tm)[12] # only consider tm length since we want to create a tax vector of particular length
     end
-    R = 1./(1+rho).^(10.*(0:(Tm-1))) # discount factors for each time period
+    R = 1 ./(1+rho).^(10 .*(0:(Tm-1))) # discount factors for each time period
+      #Julia_0_6: R = 1./(1+rho).^(10.*(0:(Tm-1)))
+      #Julia_1_1_case
     D = zeros(Tm,12,nsample)
     # Convert consumption to per capita discounted utility at time t, in region I (weighted by population), in quintile q, for random draw n
     for t = 1:Tm #convert per capita consumption to discounted utility
@@ -400,27 +537,35 @@ function tax2expectedwelfare10(tax, P, rho, eta, nu, Tm, tm, lm; model="NICE")
       D[:,:,i] = D[:,:,i].*P[i].L[1:Tm,:]
     end
     # Now sum over regions to get per capita discounted utility at time t, in random draw n
-    B2 = sum(D,2)
+    B2 = sum(D,dims=2)
+      #Julia_0_6: B2 = sum(D,2)
     # Now sum over time to get per capita lifetime discounted utility in random draw n, and undo the concavity to get a "certainty equivalent" consumption measure
-    B3 = (sum(B2,1).*(1-eta)).^(1/(1-eta))
+    B3 = (sum(B2,dims=1).*(1-eta)).^(1/(1-eta))
+      #Julia_0_6: B3 = (sum(B2,1).*(1-eta)).^(1/(1-eta))
     # Now sum over random draws with the risk adjustment (nu) to get total world welfare (normalizing by nsample)
     W = sum(B3.^(1-nu))*(1/(1-nu))./nsample
     return W,c
+
   elseif model == "DICE"
     c = zeros(Tm,nsample) # will contain per capita consumption at time t, in region I, in quintile q, for random draw n
     for i = 1:nsample
-        c[:,i] = sum(fromtax(tax[:,i],P[i],Tm)[12].*P[i].L[1:Tm,:],2)./sum(P[i].L[1:Tm,:],2) # only consider tm length since we want to create a tax vector of particular length
+        c[:,i] = sum(fromtax(tax[:,i],P[i],Tm)[12].*P[i].L[1:Tm,:],dims=2)./sum(P[i].L[1:Tm,:],dims=2) # only consider tm length since we want to create a tax vector of particular length
+            #Julia_0_6: c[:,i] = sum(fromtax(tax[:,i],P[i],Tm)[12].*P[i].L[1:Tm,:],2)./sum(P[i].L[1:Tm,:],2)
     end
-    R = 1./(1+rho).^(10.*(0:(Tm-1))) # discount factors for each time period
+    R = 1 ./(1+rho).^(10 .*(0:(Tm-1))) # discount factors for each time period
+      #Julia_0_6: R = 1./(1+rho).^(10.*(0:(Tm-1)))
+      #Julia_1_1_case
     D = zeros(Tm,nsample)
     for t = 1:Tm #convert per capita consumption to discounted utility
       D[t,:] = ((c[t,:].^(1-eta)).*R[t])./(1-eta)
     end
     for i=1:nsample # weight discounted utility by global population
-      D[:,i] = D[:,i].*sum(P[i].L[1:Tm,:],2)
+      D[:,i] = D[:,i].*sum(P[i].L[1:Tm,:],dims=2)
+         #Julia_0_6: D[:,i] = D[:,i].*sum(P[i].L[1:Tm,:],2)
     end
     # Now sum over time to get per capita lifetime discounted utility in random draw n
-    B3 = (sum(D,1).*(1-eta)).^(1/(1-eta))
+    B3 = (sum(D,dims=1).*(1-eta)).^(1/(1-eta))
+      #Julia_0_6: B3 = (sum(D,1).*(1-eta)).^(1/(1-eta))
     # Now sum over random draws with the risk adjustment (nu) to get total world welfare (normalizing by nsample)
     W = sum(B3.^(1-nu))*(1/(1-nu))./nsample
     return W,c
@@ -428,29 +573,44 @@ function tax2expectedwelfare10(tax, P, rho, eta, nu, Tm, tm, lm; model="NICE")
 end
 
 function welfare2c_bar(W, L, rho, eta, nu, Tm)
-  R = 1./(1+rho).^(10.*(0:(Tm-1))) # discount factors for each time period
+  R = 1 ./(1+rho).^(10 .*(0:(Tm-1))) # discount factors for each time period
+      #Julia_0_6: R = 1./(1+rho).^(10.*(0:(Tm-1)))
+      #Julia_1_1_case
   D = sum(R.*L)
   cbar = (((1-nu)*W)^(1/(1-nu)))/((D)^(1/(1-eta)))
   return cbar
 end
 
-function VarsFromTaxes(taxes_1, taxes_2, PP, nsample; model = "NICE")
+function VarsFromTaxes(taxes_1, taxes_2, PP, nsample; model="NICE")
   # Create storage objects
   if (model == "RICE") | (model == "DICE")
-    c = Array(Float64, Tm, 12, nsample)
+    c = Array{Float64}(undef, Tm, 12, nsample)
+      #Julia_0_6: c = Array(Float64, Tm, 12, nsample)
   else
-    c = Array(Float64, Tm, 12, 5, nsample)
+    c = Array{Float64}(undef, Tm, 12, 5, nsample)
+      #Julia_0_6: c = Array(Float64, Tm, 12, 5, nsample)
   end
-  K = Array(Float64, Tm, 12, nsample)
-  T = Array(Float64, Tm, 2, nsample)
-  E = Array(Float64, Tm, 12, nsample)
-  M = Array(Float64, Tm, 3, nsample)
-  mu = Array(Float64, Tm, 12, nsample)
-  lam = Array(Float64, Tm, 12, nsample)
-  D = Array(Float64, Tm, 12, nsample)
-  AD = Array(Float64, Tm, 12, nsample)
-  Y = Array(Float64, Tm, 12, nsample)
-  Q = Array(Float64, Tm, 12, nsample)
+  K = Array{Float64}(undef, Tm, 12, nsample)
+      #Julia_0_6: K = Array(Float64, Tm, 12, nsample)
+  T = Array{Float64}(undef, Tm, 2, nsample)
+      #Julia_0_6: T = Array(Float64, Tm, 2, nsample)
+  E = Array{Float64}(undef, Tm, 12, nsample)
+      #Julia_0_6: E = Array(Float64, Tm, 12, nsample)
+  M = Array{Float64}(undef, Tm, 3, nsample)
+      #Julia_0_6: M = Array(Float64, Tm, 3, nsample)
+  mu = Array{Float64}(undef, Tm, 12, nsample)
+      #Julia_0_6: mu = Array(Float64, Tm, 12, nsample)
+  lam = Array{Float64}(undef, Tm, 12, nsample)
+      #Julia_0_6: lam = Array(Float64, Tm, 12, nsample)
+  D = Array{Float64}(undef, Tm, 12, nsample)
+      #Julia_0_6: D = Array(Float64, Tm, 12, nsample)
+  AD = Array{Float64}(undef, Tm, 12, nsample)
+      #Julia_0_6: AD = Array(Float64, Tm, 12, nsample)
+  Y = Array{Float64}(undef, Tm, 12, nsample)
+      #Julia_0_6:  Y = Array(Float64, Tm, 12, nsample)
+  Q = Array{Float64}(undef, Tm, 12, nsample)
+      #Julia_0_6: Q = Array(Float64, Tm, 12, nsample)
+
 
   # Store data
   for i = 1:Int(max(round(nsample/2),1))
@@ -470,6 +630,7 @@ function VarsFromTaxes(taxes_1, taxes_2, PP, nsample; model = "NICE")
     Y[:,:,i] = fromtax(taxes_1,PP[i],Tm)[10]
     Q[:,:,i] = fromtax(taxes_1,PP[i],Tm)[11]
   end
+
   for i = (Int(max(round(nsample/2),1))+1):nsample
     if (model == "RICE") | (model == "DICE")
       c[:,:,i] = fromtax(taxes_2,PP[i],Tm)[12]
@@ -493,20 +654,20 @@ end
 function VarsFromTaxes10(taxes, PP, nsample; model = "NICE", Tm=32)
   # Create storage objects
   if (model == "RICE") | (model == "DICE")
-    c = Array(Float64, Tm, 12, nsample)
+    c = Array{Float64}(undef, Tm, 12, nsample)
   else
-    c = Array(Float64, Tm, 12, 5, nsample)
+    c = Array{Float64}(undef, Tm, 12, 5, nsample)
   end
-  K = Array(Float64, Tm, 12, nsample)
-  T = Array(Float64, Tm, 2, nsample)
-  E = Array(Float64, Tm, 12, nsample)
-  M = Array(Float64, Tm, 3, nsample)
-  mu = Array(Float64, Tm, 12, nsample)
-  lam = Array(Float64, Tm, 12, nsample)
-  D = Array(Float64, Tm, 12, nsample)
-  AD = Array(Float64, Tm, 12, nsample)
-  Y = Array(Float64, Tm, 12, nsample)
-  Q = Array(Float64, Tm, 12, nsample)
+  K = Array{Float64}(undef, Tm, 12, nsample)
+  T = Array{Float64}(undef, Tm, 2, nsample)
+  E = Array{Float64}(undef, Tm, 12, nsample)
+  M = Array{Float64}(undef, Tm, 3, nsample)
+  mu = Array{Float64}(undef, Tm, 12, nsample)
+  lam = Array{Float64}(undef, Tm, 12, nsample)
+  D = Array{Float64}(undef, Tm, 12, nsample)
+  AD = Array{Float64}(undef, Tm, 12, nsample)
+  Y = Array{Float64}(undef, Tm, 12, nsample)
+  Q = Array{Float64}(undef, Tm, 12, nsample)
 
   # Store data
   for i = 1:nsample
@@ -521,7 +682,7 @@ function VarsFromTaxes10(taxes, PP, nsample; model = "NICE", Tm=32)
 end
 
 # Create storage object
-type Results
+mutable struct Results      #Julia_0_6: type Results
   regime
   nsample
   Tm
@@ -548,7 +709,7 @@ type Results
   PP
 end
 
-type Results10
+mutable struct Results10      #Julia_0_6: type Results
   regime
   nsample
   Tm
@@ -578,10 +739,15 @@ end
 function FrameFromResults(res, Tm, nsample, Regions, idims)
   # set up dataframe with periods, regions, State
   if length(size(res.c)) > 2
-    dataP = DataFrame(ID = 1:(Tm*12*nsample), State = reshape(repmat(collect(1:nsample)',Tm*12),Tm*12*nsample,1)[:,1], Region = repmat(reshape(repmat(Regions,Tm),Tm*12,1),nsample)[:,1], Year = repmat(repmat(10*(0:Tm-1)+2005,12),nsample))
+    dataP = DataFrame(ID = 1:(Tm*12*nsample), 
+                      State = reshape(repeat(collect(1:nsample)',Tm*12),Tm*12*nsample,1)[:,1], 
+                      Region = repeat(reshape(repeat(Regions,Tm),Tm*12,1),nsample)[:,1], 
+                      Year = repeat(repeat(10 .*(0:Tm-1) .+2005,12),nsample))
+      #Julia_0_6:     Year = repmat(repmat(10*(0:Tm-1)+2005,12),nsample))
+      #Julia_1_1_case
     # add taxes (to the correct states)
-    dataP[:tax] = [repmat(repmat(res.taxes_1,12),idims);repmat(repmat(res.taxes_2,12),nsample-idims)]
-    dataP[:T] = reshape(repmat(res.T[:,1,:],12),Tm*12*nsample)
+    dataP[:tax] = [repeat(repeat(res.taxes_1,12),idims);repeat(repeat(res.taxes_2,12),nsample-idims)]
+    dataP[:T] = reshape(repeat(res.T[:,1,:],12),Tm*12*nsample)
     # add consumption quintiles
     if length(size(res.c)) == 4
       confield = [:cq1, :cq2, :cq3, :cq4, :cq5]
@@ -601,8 +767,8 @@ function FrameFromResults(res, Tm, nsample, Regions, idims)
       dataP[Symbol(field)] = reshape(getfield(res,field),Tm*12*nsample)
     end
     # add exogenous variables
-    y = Array(Float64,Tm*12*nsample,6)
-    x = Array(Float64,Tm*12,nsample)
+    y = Array{Float64}(undef,Tm*12*nsample,6)
+    x = Array{Float64}(undef,Tm*12,nsample)
     k=1
     for field in [:L,:A,:sigma,:th1,:pb,:EL]
       for m in 1:nsample
@@ -617,7 +783,7 @@ function FrameFromResults(res, Tm, nsample, Regions, idims)
 end
 
 # Define Deep as the type object that will hold all the random parameter draws in createP
-type Deep
+mutable struct Deep     #Julia_0_6: type Deep 
   gy0
   sighisT
   TrM12
@@ -633,7 +799,7 @@ end
 Regions = ["USA" "OECD Europe" "Japan" "Russia" "Non-Russia Eurasia" "China" "India" "Middle East" "Africa" "Latin America" "OHI" "Other non-OECD Asia"]
 
 # Define PP_ as the type that will hold the parameters returned by creatP
-immutable PP_
+struct PP_
   para::Array{Float64,2} # 1x4 vector, constant across nsample, regions, time
   L::Array{Float64,2} # TxI array
   A::Array{Float64} # TxI array
