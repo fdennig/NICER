@@ -10,6 +10,4 @@ Content:
 - The "/Data" subfolder contains two data files required to run the model, i.e. certainPARAMETERS.jld and dparam_i.jld.
 - The "/specificRoutines" and "/preOct2016" subfolders have not been considered nor yet updated for Julia 1.1.0.
 
-Update has been possible with the support of Frank Errikson (Berkeley), Brian Jabarian (PSE-Princeton) and Maddalena Ferranna (MIT).
-
-See following paper to get more information on model: https://www.pnas.org/content/112/52/15827
+Update done with Brian Jabarian (PSE-Princeton). See following paper to get more information on model: https://www.pnas.org/content/112/52/15827
