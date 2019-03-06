@@ -11,3 +11,5 @@ Content:
 - The "/specificRoutines" and "/preOct2016" subfolders have not been considered nor yet updated for Julia 1.1.0.
 
 Update has been possible with the support of Frank Errikson (Berkeley), Brian Jabarian (PSE-Princeton) and Maddalena Ferranna (MIT).
+
+See following paper to get more information on model: https://www.pnas.org/content/112/52/15827
