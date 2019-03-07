@@ -1,8 +1,8 @@
 # NICER in Julia 1.1
-Contains the Julia code of the "NICER" integrated assessment model
+Contains the Julia code of the "NICER" integrated assessment model for Julia 1.1
 
 The original model from fdenning (https://github.com/fdennig/NICER) was running with Julia 0.6.
-This update allows to run under Julia 1.1.0.
+This update allows to run under Julia 1.1.0 now.
 
 Content:
 - The "Optimization.jl" file contains the template for the main types of optimization. This is the main program.
