@@ -6,7 +6,7 @@
 ##############################################################################################################################################################
 # Source: original program running in Julia 0.6.4 can be found at https://github.com/fdennig/NICER
 # Changes introduced: all changes required to run with Julia 1.1.0
-# File release: March 5th 2019 (BM)
+# File release: March 13th 2019 (BM)
 ##############################################################################################################################################################
 # Program required by:
 #  ../Optimization.jl
@@ -109,7 +109,7 @@ function tfactorp(A0,gy0,tgl,delA,gamma,Crate,Cratio,y0,nsample)
   for i = 1:nsample
     kR[i,:,:] = Crate[i].*(1-gamma)*0.1*(fac[i,:]*k[i,:]')
   end
-  gtUS_ = permutedims(cat(dims=3,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS),[1 3 2]) # adds third dimension to gtUS (manual at the moment since I-1 = 11 is fixed)
+  gtUS_ = permutedims(cat(gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS;dims=3),[1 3 2]) # adds third dimension to gtUS (manual at the moment since I-1 = 11 is fixed)
       #Julia_0_6: gtUS_ = permutedims(cat(3,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS),[1 3 2])
   gtR = gtUS_ + kR
   cgtR = cumsum(gtR, dims=3)
@@ -386,6 +386,7 @@ function tax2expectedwelfare(tax, P, rho, eta, nu, Tm, tm, lm, idims; model="NIC
   nsample=length(P)
   
   if model == "NICE"
+    # println("   + NICE in tax2expectedwelfare")
     c = zeros(Tm,12,5,nsample) # will contain per capita consumption at time t, in region I, in quintile q, for random draw n
     for i = 1:idims
         c[:,:,:,i] = fromtax(tax[1:tm],P[i],Tm)[1] # only consider tm length since we want to create a tax vector of particular length
@@ -402,9 +403,11 @@ function tax2expectedwelfare(tax, P, rho, eta, nu, Tm, tm, lm, idims; model="NIC
     for t = 1:Tm
       D[t,:,:,:] = ((c[t,:,:,:].^(1-eta)).*R[t])./(1-eta)
     end
+
     D_ = zeros(Tm,12,5,nsample)
     for i = 1:nsample
-      D_[:,:,:,i] = D[:,:,:,i].*cat(3,P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:])/5
+      D_[:,:,:,i] = D[:,:,:,i].*cat(P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:];dims=3)/5
+        #Julia_0_6: D_[:,:,:,i] = D[:,:,:,i].*cat(3,P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:])/5
     end
     D = D_
     # Now sum over quintiles to get per capita discounted utility at time t, in region I, in random draw n
@@ -422,6 +425,7 @@ function tax2expectedwelfare(tax, P, rho, eta, nu, Tm, tm, lm, idims; model="NIC
     return W,c
   
   elseif model == "RICE"
+    # println("   + NICE in tax2expectedwelfare")
     c = zeros(Tm,12,nsample) # will contain per capita consumption at time t, in region I, in quintile q, for random draw n
     for i = 1:idims
         c[:,:,i] = fromtax(tax[1:tm],P[i],Tm)[12] # only consider tm length since we want to create a tax vector of particular length
@@ -452,6 +456,7 @@ function tax2expectedwelfare(tax, P, rho, eta, nu, Tm, tm, lm, idims; model="NIC
     return W,c
   
   elseif model == "DICE"
+    # println("   + DICE in tax2expectedwelfare")
     c = zeros(Tm,nsample) # will contain per capita consumption at time t, in region I, in quintile q, for random draw n
     for i = 1:idims
         c[:,i] = sum(fromtax(tax[1:tm],P[i],Tm)[12].*P[i].L[1:Tm,:],dims=2)./sum(P[i].L[1:Tm,:],dims=2) # only consider tm length since we want to create a tax vector of particular length
@@ -501,7 +506,7 @@ function tax2expectedwelfare10(tax, P, rho, eta, nu, Tm, tm, lm; model="NICE")
     end
     D_ = zeros(Tm,12,5,nsample)
     for i = 1:nsample
-      D_[:,:,:,i] = D[:,:,:,i].*cat(dims=3,P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:])/5
+      D_[:,:,:,i] = D[:,:,:,i].*cat(P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:];dims=3)/5
       #Julia_0_6: D_[:,:,:,i] = D[:,:,:,i].*cat(3,P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:])/5
       #Julia_1_1_case
     end
