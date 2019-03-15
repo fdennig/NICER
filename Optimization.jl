@@ -6,7 +6,7 @@
 ##############################################################################################################################################################
 # Source: original program running in Julia 0.6.4 can be found at https://github.com/fdennig/NICER
 # Changes introduced: all changes required to run with Julia 1.1.0
-# File release: March 5th 2019 (BM)
+# File release: March 15th 2019 (BM)
 ##############################################################################################################################################################
 # Execution requires following files:
 #  ../Optimization.jl
@@ -91,7 +91,8 @@ tax_length = 2*tm - lm
 count = 0 # keep track of number of iterations
 
 # Define function to be maximized (requires special format for NLopt package)
-model = "DICE"  
+# model = "DICE"   # 3.5.19
+ model = "NICE"   # 3.14.19
 println("+ Model selected = ",model)
 
 function welfaremax(x,grad) # x is the tax vector, grad is the gradient (unspecified here since we have no way of computing it)
@@ -157,8 +158,8 @@ dataP = FrameFromResults(res, Tm, nsample, Regions, idims)
 # Creation CSV output file
    # writetable("$(pwd())/Outputs/Optima/meanOptimum$(model).csv", dataP)   # Julia 0.6
    # CSV.write("$(pwd())/Outputs/Optima/meanOptimum$(model).csv", dataP)   # Julia 1.x
-CSV.write("$(pwd())/Outputs/meanOptimum$(model)-Julia11.csv", dataP)
-println("$(pwd())/Outputs/meanOptimum$(model)-Julia11.csv")
+CSV.write("$(pwd())/Outputs/meanOptimum$(model)Julia110.csv", dataP)
+println("$(pwd())/Outputs/meanOptimum$(model)Julia110.csv")
 
 # Creation JLD output file
 #jldopen("$(pwd())/Outputs/meanOptimum$(model)Julia11.jld", "w") do file
