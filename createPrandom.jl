@@ -6,7 +6,7 @@
 ##############################################################################################################################################################
 # Source: original program running in Julia 0.6.4 can be found at https://github.com/fdennig/NICER
 # Changes introduced: all changes required to run with Julia 1.1.0
-# File release: March 15th 2019 (BM)
+# File release: March 16th 2019 (BM)
 ##############################################################################################################################################################
 # Program required by:
 #  ../Optimization.jl
