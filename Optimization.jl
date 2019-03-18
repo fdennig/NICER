@@ -25,6 +25,7 @@ println("\n------------------------------\n   Program: optimization.jl\n--------
 # Preliminaries
 println("+ Loading of required libraries")
 using HDF5, JLD, LinearAlgebra, CSV, DataFrames, NLopt, Distributions
+# using Random  # recommanded by Julia 0.7, not required with Julia 1.1
 
 # Select the regime for parameter randomization
   # 0 = no randomization (just uses means)

@@ -71,7 +71,7 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   #following lines are to add uncertainty to damage, which was done afterwards and therefore requires this fix
   psi1 = certainPARAMETERS["psi1"][2] # mean values
   psiMM = [psi1[1:2,:];ones(12)'.*psi7M]
-  mean_dam = damage(2.5,psiMM)./(ones(12) +damage(2.5,psiMM))
+  mean_dam = damage(2.5,psiMM)./(ones(12) .+damage(2.5,psiMM))
       #Julia_0_6:  mean_dam = damage(2.5,psiMM)./(1+damage(2.5,psiMM))
   
   # Crate: convergence rate of TFP

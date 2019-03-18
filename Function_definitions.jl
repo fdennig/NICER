@@ -234,16 +234,16 @@ function fromtax(tax,P,Tm)
 	lam[1,:] = max.(min.(P.th1[1, :].*mu[1, :].^P.th2,1),0) # lam between 0 and 1 element by element
       #Julia_0_6:   lam[1,:] = max(min(P.th1[1,:].*mu[1,:].^P.th2,1),0)
   D[1,:] = damage(T[1,1],P.psi)
-  AD[1,:] = (1 .-lam[1,:])./(1 .+D[1,:])   #BM-no warning for required dot in Julia_0_7
+  AD[1,:] = (1 .-lam[1,:])./(1 .+D[1,:])   #BM-warning Julia_0_7
       #Julia_0_6: AD[1,:] = (1-lam[1,:])./(1+D[1,:])  
   Y[1,:] = P.A[1,:].*P.L[1,:].^(1-P.para[4]).*K[1,:].^P.para[4]
 	Q[1,:] = AD[1,:].*Y[1,:]
-  cbar[1,:] = (1 .-S[1,:]).*Q[1,:]./P.L[1,:]   #BM-no warning for required dot in Julia_0_7
+  cbar[1,:] = (1 .-S[1,:]).*Q[1,:]./P.L[1,:]   #BM-warning Julia_0_7
       #Julia_0_6: cbar[1,:] = (1-S[1,:]).*Q[1,:]./P.L[1, :]
 
 	#quintile consumptions period 1
 	for i = 1:5
-    c[1,:,i] = 5*cbar[1,:].*((1 .+D[1, :]).*P.q[i, :] - D[1, :].*P.d[i, :])   #BM-no warning for required dot in Julia_0_7
+    c[1,:,i] = 5*cbar[1,:].*((1 .+D[1, :]).*P.q[i, :] - D[1, :].*P.d[i, :])   #BM-warning Julia_0_7
         #Julia_0_6: c[1,:,i] = 5*cbar[1,:].*((1+D[1,:]).*P.q[i,:] - D[1,:].*P.d[i,:])
   end
 
@@ -253,21 +253,21 @@ function fromtax(tax,P,Tm)
   Y[2, :] = P.A[2,:].*P.L[2,:].^(1-P.para[4]).*K[2,:].^P.para[4]
   mu[2, :] = max.(min.((TAX[2]./P.pb[2,:]).^(1/(P.th2-1)),1),0)
         #Julia_0_6: mu[2,:] = max(min((TAX[2]./P.pb[2,:]).^(1/(P.th2-1)),1),0)
-  E[2, :] = (1 .-mu[2, :]).*P.sigma[2,:].*Y[2, :]   #BM-no warning for required dot in Julia_0_7
+  E[2, :] = (1 .-mu[2, :]).*P.sigma[2,:].*Y[2, :]   #BM-warning Julia_0_7
         #Julia_0_6: E[2,:] = (1 - mu[2, :]).*P.sigma[2, :].*Y[2, :]
   M[3, :] = Mflow(M[2,:]', sum(E[2, :] + P.EL[2, :]), P.TrM)
   lam[2, :] = max.(min.(P.th1[2, :].*mu[2, :].^P.th2,1),0)
         #Julia_0_6: lam[2, :] = max(min(P.th1[2, :].*mu[2, :].^P.th2,1),0)
 	D[2, :] = damage(T[2, 1], P.psi)
-  AD[2, :] = (1 .-lam[2, :])./(1 .+D[2, :])     #BM-no warning for required dot in Julia_0_7
+  AD[2, :] = (1 .-lam[2, :])./(1 .+D[2, :])     #BM-warning Julia_0_7
         #Julia_0_6: AD[2, :] = (1-lam[2, :])./(1+D[2, :])
 	Q[2,:] = AD[2,:].*Y[2,:]
-  cbar[2,:] = (1 .-S[2, :]).*Q[2, :]./P.L[2, :]   #BM-no warning for required dot in Julia_0_7
+  cbar[2,:] = (1 .-S[2, :]).*Q[2, :]./P.L[2, :]   #BM-warning Julia_0_7
         #Julia_0_6: cbar[2,:] = (1-S[2, :]).*Q[2, :]./P.L[2, :]
    
 	#quintile consumptions period 2
 	for i = 1:5
-    c[2,:,i] = max.(5*cbar[2,:].*((1 .+D[2, :]).*P.q[i, :] - D[2, :].*P.d[i, :]), P.tol)   #BM-no warning for required dot in Julia_0_7
+    c[2,:,i] = max.(5*cbar[2,:].*((1 .+D[2, :]).*P.q[i, :] - D[2, :].*P.d[i, :]), P.tol)   #BM-warning Julia_0_7
         #Julia_0_6: c[2,:,i] = max(5*cbar[2,:].*((1+D[2, :]).*P.q[i, :] - D[2, :].*P.d[i, :]), P.tol)
 	end
   K[3, :] = max.(S[2, :].*Q[2, :].*10,0) # prevent negative capital (note, this will not bind at the optimum, but prevents the optmization from crashing)
@@ -280,20 +280,20 @@ function fromtax(tax,P,Tm)
         #Julia_0_6: mu[t, :] =  max(min((TAX[t]./P.pb[t,:]).^(1/(P.th2-1)),1),0)
     lam[t, :] = max.(min.(P.th1[t, :].*mu[t, :].^P.th2,1),0) 
         #Julia_0_6: lam[t, :] = max(min(P.th1[t, :].*mu[t, :].^P.th2,1),0)
-    E[t, :] = (1 .-mu[t, :]).*P.sigma[t, :].*Y[t, :]   #BM-no warning for required dot in Julia_0_7
+    E[t, :] = (1 .-mu[t, :]).*P.sigma[t, :].*Y[t, :]   #BM-warning Julia_0_7
         #Julia_0_6: E[t, :] = (1 - mu[t, :]).*P.sigma[t, :].*Y[t, :]
     M[t+1, :] = Mflow(M[t,:]', sum(E[t, :] + P.EL[t, :]), P.TrM)
 		Mbar = (M[t+1, 1] +M[t, 1])/2
 		T[t, :] = tempforcing(Mbar, P.Fex[t], P.xi, P.TrT, T[t-1, :]')
 		D[t, :] = damage(T[t, 1], P.psi)
-    AD[t, :] = (1 .-lam[t, :])./(1 .+D[t, :])   #BM-no warning for required dot in Julia_0_7
+    AD[t, :] = (1 .-lam[t, :])./(1 .+D[t, :])   #BM-warning Julia_0_7
         #Julia_0_6: AD[t, :] = (1-lam[t, :])./(1+D[t, :])
 		Q[t, :] = AD[t, :].*Y[t, :]                        
-    cbar[t,:] = (1 .-S[t, :]).*Q[t, :]./P.L[t, :]   #BM-no warning for required dot in Julia_0_7
+    cbar[t,:] = (1 .-S[t, :]).*Q[t, :]./P.L[t, :]   #BM-warning Julia_0_7
         #Julia_0_6: cbar[t,:] = (1-S[t, :]).*Q[t, :]./P.L[t, :]
 
 		for i = 1:5
-      c[t, :, i] = max.(5*cbar[t,:].*((1 .+D[t, :]).*P.q[i, :] - D[t, :].*P.d[i, :]), P.tol)   #BM-no warning for required dot in Julia_0_7
+      c[t, :, i] = max.(5*cbar[t,:].*((1 .+D[t, :]).*P.q[i, :] - D[t, :].*P.d[i, :]), P.tol)   #BM-warning Julia_0_7
         #Julia_0_6: c[t, :, i] = max(5*cbar[t,:].*((1+D[t, :]).*P.q[i, :] - D[t, :].*P.d[i, :]), P.tol)
 		end
     K[t+1, :] = max.(S[t, :].*Q[t, :]*10,0) # prevent negative capital (note, this will not bind at the optimum, but prevents the optimization from crashing)
@@ -308,13 +308,13 @@ function fromtax(tax,P,Tm)
         #Julia_0_6: lam[Tm, :] = max(min(P.th1[Tm, :].*mu[Tm, :].^P.th2,1),0)
 	T[Tm, :] = tempforcing(M[Tm, 1], P.Fex[Tm], P.xi, P.TrT, T[Tm-1, :]')
 	D[Tm, :] = damage(T[Tm, 1], P.psi)
-  AD[Tm, :] = (1 .-lam[Tm, :])./(1 .+D[Tm, :])   #BM-no warning for required dot in Julia_0_7
+  AD[Tm, :] = (1 .-lam[Tm, :])./(1 .+D[Tm, :])   #BM-warning Julia_0_7
         #Julia_0_6: AD[Tm, :] = (1-lam[Tm, :])./(1+D[Tm, :])
 	Q[Tm, :] = AD[Tm, :].*Y[Tm, :]
-  cbar[Tm,:] = (1 .-S[Tm, :]).*Q[Tm, :]./P.L[Tm, :]   #BM-no warning for required dot in Julia_0_7
+  cbar[Tm,:] = (1 .-S[Tm, :]).*Q[Tm, :]./P.L[Tm, :]   #BM-warning Julia_0_7
         #Julia_0_6:  cbar[Tm,:] = (1-S[Tm, :]).*Q[Tm, :]./P.L[Tm, :]
 	for i = 1:5
-    c[Tm, :, i] =  max.(5*cbar[Tm,:].*((1 .+D[Tm, :]).*P.q[i, :] - D[Tm, :].*P.d[i, :]), P.tol)   #BM-no warning for required dot in Julia_0_7, max. required by Julia 0.7
+    c[Tm, :, i] =  max.(5*cbar[Tm,:].*((1 .+D[Tm, :]).*P.q[i, :] - D[Tm, :].*P.d[i, :]), P.tol)   #BM-warning Julia_0_7, max. required by Julia 0.7
         #Julia_0_6: c[Tm, :, i] =  max(5*cbar[Tm,:].*((1+D[Tm, :]).*P.q[i, :] - D[Tm, :].*P.d[i, :]), P.tol)
 	end
 
